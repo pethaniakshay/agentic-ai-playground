@@ -183,7 +183,7 @@ edit = Task(
 crew = Crew(
     agents=[planner, writer, editor],
     tasks=[plan, write, edit],
-    verbose=2
+    verbose=True
 )
 
 # =============================================================================
