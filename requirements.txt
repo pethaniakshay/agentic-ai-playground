@@ -2,3 +2,5 @@ crewai
 crewai_tools
 langchain_community
 python-dotenv
+google-generativeai
+langchain-google-genai

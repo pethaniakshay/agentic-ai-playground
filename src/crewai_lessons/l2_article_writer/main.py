@@ -8,8 +8,16 @@
 # !pip install crewai==0.28.8 crewai_tools==0.1.6 langchain_community==0.0.29
 
 # Warning control
+import os
 import warnings
 warnings.filterwarnings('ignore')
+
+# Explicitly set OPENAI_API_KEY to a dummy value to prevent any implicit OpenAI client initialization
+os.environ["OPENAI_API_KEY"] = ""
+
+# Explicitly remove OpenAI API Base to prevent implicit initialization
+if "OPENAI_API_BASE" in os.environ:
+    del os.environ["OPENAI_API_BASE"]
 
 # Import from the crewAI library
 from crewai import Agent, Task, Crew
@@ -19,11 +27,12 @@ from crewai import Agent, Task, Crew
 # Optional Note: crewAI also allow other popular models to be used as a LLM for your Agents.
 # You can see some of the examples at the bottom of the script.
 
-import os
-from .utils import get_openai_api_key
+from .utils import get_gemini_api_key
+from langchain_google_genai import ChatGoogleGenerativeAI
 
-openai_api_key = get_openai_api_key()
-os.environ["OPENAI_MODEL_NAME"] = 'gpt-3.5-turbo'
+gemini_api_key = get_gemini_api_key()
+os.environ["GOOGLE_API_KEY"] = gemini_api_key
+os.environ["GOOGLE_GENAI_MODEL_NAME"] = "gemini-2.0-flash"
 
 # =============================================================================
 # Creating Agents
@@ -47,6 +56,11 @@ os.environ["OPENAI_MODEL_NAME"] = 'gpt-3.5-turbo'
 # is that it can avoid adding those whitespaces and newline characters,
 # making it better formatted to be passed to the LLM.
 
+llm_model = ChatGoogleGenerativeAI(
+    model="gemini-2.0-flash",
+    api_key=gemini_api_key
+)
+
 planner = Agent(
     role="Content Planner",
     goal="Plan engaging and factually accurate content on {topic}",
@@ -58,7 +72,8 @@ planner = Agent(
               "Your work is the basis for "
               "the Content Writer to write an article on this topic.",
     allow_delegation=False,
-    verbose=True
+    verbose=True,
+    llm=llm_model
 )
 
 # =============================================================================
@@ -84,7 +99,8 @@ writer = Agent(
               "when your statements are opinions "
               "as opposed to objective statements.",
     allow_delegation=False,
-    verbose=True
+    verbose=True,
+    llm=llm_model
 )
 
 # =============================================================================
@@ -99,16 +115,7 @@ editor = Agent(
               "from the Content Writer. "
               "Your goal is to review the blog post "
               "to ensure that it follows journalistic best practices,"
-              "provides balanced viewpoints "
-              "when providing opinions or assertions, "
-              "and also avoids major controversial topics "
-              "or opinions when possible.",
-    allow_delegation=False,
-    verbose=True
-)
-
-# =============================================================================
-# Creating Tasks
+              # =============================================================================
 # =============================================================================
 #
 # - Define your Tasks, and provide them a `description`, `expected_output` and `agent`.
@@ -183,7 +190,8 @@ edit = Task(
 crew = Crew(
     agents=[planner, writer, editor],
     tasks=[plan, write, edit],
-    verbose=True
+    verbose=True,
+    llm=llm_model
 )
 
 # =============================================================================
